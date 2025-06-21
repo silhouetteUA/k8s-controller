@@ -13,14 +13,6 @@ It is designed for learning, experimentation, or extension into production-grade
 
 ## 🛠️ Development Environment Setup
 
-To set up a development control plane environment, please use the following repository:
-
-🔗 [silhouetteUA/kubernetes-controlplane](https://github.com/silhouetteUA/kubernetes-controlplane)
-
-This repository provides a lightweight Kubernetes control plane setup suitable for local testing and development of Kubernetes controllers.
-
-## 🛠️ Development Environment Setup
-
 To set up a development control plane environment, you can use the following repository:
 
 🔗 [silhouetteUA/kubernetes-controlplane](https://github.com/silhouetteUA/kubernetes-controlplane)
