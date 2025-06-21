@@ -52,6 +52,6 @@ Choose the setup that best fits your local or cloud-based workflow.
 ## 📄 License
 
 MIT License  
-© 2025 Your Name or Organization
+© 2025 silhouetteUA
 
 ---
