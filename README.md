@@ -1,4 +1,4 @@
-# k8s-controller
+# Custom-k8s-Controller
 
 **Custom Kubernetes Controller written in Go**
 
