@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -17,6 +18,7 @@ var contextCmd = &cobra.Command{
 			home, err := os.UserHomeDir()
 			if err != nil {
 				fmt.Println("Error getting home directory:", err)
+				log.Error().Err(err).Msg("Error getting home directory")
 				return
 			}
 			kubeconfig = home + "/.kube/config"
@@ -34,6 +36,7 @@ var contextCmd = &cobra.Command{
 		ctxConfig := config.Contexts[currentContext]
 		if ctxConfig == nil {
 			fmt.Println("Context config not found")
+			log.Error().Msg("Context config not found")
 			return
 		}
 
