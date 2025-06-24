@@ -69,7 +69,7 @@ jobs:
 
   build:
     name: 🏗️ Build Binary
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     needs: [lint, test]
 
     steps:
