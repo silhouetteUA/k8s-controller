@@ -10,6 +10,7 @@ on:
       - 'charts/**'
       - 'cmd/**'
       - '.github/workflows/ci.yaml'
+      - 'Makefile'
   pull_request:
     branches: ["main", "feature/**"]
     paths:
@@ -19,6 +20,7 @@ on:
       - 'charts/**'
       - 'cmd/**'
       - '.github/workflows/ci.yml'
+      - 'Makefile'
 
 env:
   REGISTRY: ghcr.io
