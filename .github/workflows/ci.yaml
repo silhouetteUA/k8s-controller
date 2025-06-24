@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name:
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Go
@@ -65,3 +65,25 @@ jobs:
       - name: Run tests
         run: make test
 
+  build:
+    name: 🏗️ Build Binary
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build Go Binary
+        run: make build
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: k8s-controller-${{ github.sha }}
+          path: bin/k8s-controller
