@@ -1,5 +1,5 @@
 APP = k8s-controller
-VERSION ?= $(shell git describe --tags --always --dirty)
+VERSION ?= $(shell git describe --tags --abbrev=0)
 COMMIT  ?= $(shell git rev-parse --short HEAD)
 DATE    ?= $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 
@@ -26,7 +26,7 @@ docker-build:
 	docker build --build-arg VERSION=$(VERSION) \
 	             --build-arg COMMIT=$(COMMIT) \
 	             --build-arg DATE=$(DATE) \
-	             -t $(APP):latest .
+	             -t $(APP):$(VERSION)-$(COMMIT) .
 
 clean:
 	rm -f $(APP)
