@@ -9,7 +9,7 @@ on:
       - '**.sum'
       - 'charts/**'
       - 'cmd/**'
-      - '.github/workflows/ci.yml'
+      - '.github/workflows/ci.yaml'
   pull_request:
     branches: ["main", "feature/**"]
     paths:
