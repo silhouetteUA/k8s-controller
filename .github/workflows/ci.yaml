@@ -147,3 +147,35 @@ jobs:
 
       - name: Push image to GHCR
         run: docker push ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ env.VERSION }}-${{ env.COMMIT }}
+
+  helm:
+    name: 🛳️ Update Helm Chart values
+    runs-on: ubuntu-latest
+    needs: docker
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version and commit
+        run: |
+          echo "VERSION=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+          echo "COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Adjust image TAG
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq -i '.image.tag = strenv(VERSION) + "-" + strenv(COMMIT)' charts/k8s-controller/values.yaml
+
+      - name: Adjust Chart appVersion
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq -i '.appVersion = strenv(VERSION)' charts/k8s-controller/Chart.yaml
+
+      - run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git commit -am "update tag in values.yaml and appVersion in Chart.yaml"
+          git push
