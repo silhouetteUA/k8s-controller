@@ -3,6 +3,8 @@ name: ci
 on:
   push:
     branches: ["feature/**"]
+    tags:
+      - 'v*'
     paths:
       - '**.go'
       - '**.mod'
@@ -190,3 +192,18 @@ jobs:
         with:
           name: helm-chart
           path: chart-artifacts/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          files: chart-artifacts/*.tgz
+          body: |
+            🚀 **New Release**: ${{ github.ref_name }}
+            
+            🐳 Docker Image:
+            `${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ env.VERSION }}-${{ env.COMMIT }}`
+            
+            📦 Helm chart is attached as a downloadable `.tgz`
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
