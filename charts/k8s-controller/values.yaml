@@ -1,9 +1,9 @@
 replicaCount: 1
 namespace: custom-controller
 image:
-  repository: k8s-controller    #ghcr.io/silhouetteUA/k8s-controller
-  tag: "v1.0.0-779228b" # This is set by CI to the Git tag or commit SHA
-  pullPolicy: Never # to test on KIND
+  repository: ghcr.io/silhouetteua/k8s-controller    #ghcr.io/silhouetteUA/k8s-controller
+  tag: "placeholder" # This is being set by CI
+  pullPolicy: IfNotPresent # to test on KIND use NEVER
 
 service:
   port: 8080

@@ -27,7 +27,10 @@ var serverCmd = &cobra.Command{
 					Msg("Check version request")
 				ctx.Response.Header.SetContentType("application/json")
 				ctx.Response.Header.Set("X-Request-ID", uuid)
-				fmt.Fprintf(ctx, `{"version": "%s", "commit": "%s", "date": "%s", "requestID": "%s"}`, Version, Commit, BuildDate, uuid)
+				_, err := fmt.Fprintf(ctx, `{"version": "%s", "commit": "%s", "date": "%s", "requestID": "%s"}`, Version, Commit, BuildDate, uuid)
+				if err != nil {
+					return
+				}
 			default:
 				log.Info().
 					Str("request_id", uuid).
@@ -36,7 +39,10 @@ var serverCmd = &cobra.Command{
 					Str("remote_addr", ctx.RemoteAddr().String()).
 					Msg("Incoming request")
 				ctx.Response.Header.Set("X-Request-ID", uuid)
-				fmt.Fprintf(ctx, `{"message:" "FastHTTP welcomes you, traveller!", "requestID": "%s"}`, uuid)
+				_, err := fmt.Fprintf(ctx, `{"message:" "FastHTTP welcomes you, traveller!", "requestID": "%s"}`, uuid)
+				if err != nil {
+					return
+				}
 			}
 		}
 		addr := fmt.Sprintf(":%d", serverPort)

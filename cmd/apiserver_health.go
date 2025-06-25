@@ -3,6 +3,7 @@ package cmd
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"net/http"
 	"time"
@@ -28,7 +29,11 @@ var healthCmd = &cobra.Command{
 			fmt.Printf("K8s API reachable: no (%v)\n", err)
 			return
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				log.Error().Err(err).Msg("failed to close response body")
+			}
+		}()
 		if resp.StatusCode == 200 {
 			fmt.Println("Status: Healthy")
 			fmt.Println("K8s API reachable: yes")

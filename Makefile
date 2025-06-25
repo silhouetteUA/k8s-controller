@@ -2,12 +2,13 @@ APP = k8s-controller
 VERSION ?= $(shell git describe --tags --abbrev=0)
 COMMIT  ?= $(shell git rev-parse --short HEAD)
 DATE    ?= $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+GHCR_REGISTRY := ghcr.io/silhouetteua
 
 LD_FLAGS = -X=github.com/silhouetteUA/$(APP)/cmd.Version=$(VERSION) \
            -X=github.com/silhouetteUA/$(APP)/cmd.Commit=$(COMMIT) \
            -X=github.com/silhouetteUA/$(APP)/cmd.BuildDate=$(DATE)
 
-BUILD_FLAGS = -v -o $(APP) -ldflags "$(LD_FLAGS)"
+BUILD_FLAGS = -v -o bin/$(APP) -ldflags "$(LD_FLAGS)"
 
 .PHONY: all build test run docker-build clean
 
@@ -26,8 +27,8 @@ docker-build:
 	docker build --build-arg VERSION=$(VERSION) \
 	             --build-arg COMMIT=$(COMMIT) \
 	             --build-arg DATE=$(DATE) \
-	             -t $(APP):$(VERSION)-$(COMMIT) .
+	             -t $(GHCR_REGISTRY)/$(APP):$(VERSION)-$(COMMIT) .
 
 clean:
-	rm -f $(APP)
+	rm -rf bin
 	go clean -cache

@@ -4,6 +4,14 @@
 
 ---
 
+[![[Build Status]](https://github.com/silhouetteUA/k8s-controller/actions/workflows/ci.yaml/badge.svg)](https://github.com/silhouetteUA/k8s-controller/actions/workflows/ci.yaml)
+[![Go Version](https://img.shields.io/badge/go-1.24.4-blue)](https://golang.org/)
+[![License](https://img.shields.io/github/license/silhouetteUA/k8s-controller)](https://github.com/silhouetteUA/k8s-controller/blob/feature/step5-ci/LICENSE)
+[![Image](https://img.shields.io/badge/docker-ghcr.io%2Fsilhouetteua%2Fk8s--controller-blue)](https://github.com/silhouetteUA/k8s-controller/pkgs/container/k8s-controller)
+
+
+---
+
 ## 🚀 Overview
 
 This project contains a custom Kubernetes controller implemented in Go.  

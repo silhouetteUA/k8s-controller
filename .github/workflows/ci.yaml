@@ -1,0 +1,209 @@
+name: ci
+
+on:
+  push:
+    branches: ["feature/**"]
+    tags:
+      - 'v*'
+    paths:
+      - '**.go'
+      - '**.mod'
+      - '**.sum'
+      - 'charts/**'
+      - 'cmd/**'
+      - '.github/workflows/ci.yaml'
+      - 'Makefile'
+  pull_request:
+    branches: ["main", "feature/**"]
+    paths:
+      - '**.go'
+      - '**.mod'
+      - '**.sum'
+      - 'charts/**'
+      - 'cmd/**'
+      - '.github/workflows/ci.yml'
+      - 'Makefile'
+
+env:
+  REGISTRY: ghcr.io
+  REPOSITORY: silhouetteua/k8s-controller
+  GO_VERSION: '1.24.4'
+
+
+jobs:
+
+  lint:
+    name: 🔍 Lint Go Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v8.0.0
+        with:
+          version: v2.1.6
+
+      - name: Run vet
+        run: go vet ./...
+
+  test:
+    name: 🧪 Run Go Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run tests
+        run: make test
+
+  build:
+    name: 🏗️ Build Binary
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build Go Binary
+        run: make build
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: k8s-controller-${{ github.sha }}
+          path: bin/k8s-controller
+
+
+  docker:
+    name: 🐳 Build, Scan, Push Docker Image
+    runs-on: ubuntu-latest
+    needs: build
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build a docker image
+        run: make docker-build
+
+      - name: Extract version and commit
+        run: |
+          echo "VERSION=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+          echo "COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          
+
+      - name: Show all vulnerabilities with Trivy
+        uses: aquasecurity/trivy-action@0.31.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ env.VERSION }}-${{ env.COMMIT }}
+          format: table
+          ignore-unfixed: true
+          # FULL picture, no exit code
+
+      - name: Fail on CRITICAL vulnerabilities with Trivy
+        uses: aquasecurity/trivy-action@0.31.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ env.VERSION }}-${{ env.COMMIT }}
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
+          # Vulnerability guardrails, exit on CRITICAL, if any
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push image to GHCR
+        run: docker push ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ env.VERSION }}-${{ env.COMMIT }}
+
+  helm:
+    name: 🛳️ Update and Upload Helm Chart
+    runs-on: ubuntu-latest
+    needs: docker
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version and commit
+        run: |
+          echo "VERSION=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+          echo "COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Adjust image TAG
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq -i '.image.tag = strenv(VERSION) + "-" + strenv(COMMIT)' charts/k8s-controller/values.yaml
+
+      - name: Adjust Chart appVersion
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq -i '.appVersion = strenv(COMMIT)' charts/k8s-controller/Chart.yaml
+
+      - name: Adjust Chart version
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq -i '.version = strenv(VERSION)' charts/k8s-controller/Chart.yaml
+
+      - name: Package Helm chart
+        run: |
+          helm package charts/k8s-controller 
+          mkdir -p chart-artifacts
+          mv k8s-controller-${{ env.VERSION }}.tgz chart-artifacts/
+
+      - name: Upload Helm chart artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-chart
+          path: chart-artifacts/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          files: chart-artifacts/*.tgz
+          body: |
+            🚀 **New Release**: ${{ github.ref_name }}
+            
+            🐳 Docker Image:
+            `${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ env.VERSION }}-${{ env.COMMIT }}`
+            
+            📦 Helm chart is attached as a downloadable `.tgz`
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
