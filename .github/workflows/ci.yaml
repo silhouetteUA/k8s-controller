@@ -24,6 +24,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  REPOSITORY: silhouetteua/k8s-controller
   GO_VERSION: '1.24.4'
 
 
@@ -122,7 +123,7 @@ jobs:
       - name: Show all vulnerabilities with Trivy
         uses: aquasecurity/trivy-action@0.31.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ github.repository }}:${{ env.VERSION }}-${{ env.COMMIT }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ env.VERSION }}-${{ env.COMMIT }}
           format: table
           ignore-unfixed: true
           # FULL picture, no exit code
