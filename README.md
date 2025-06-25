@@ -5,9 +5,9 @@
 ---
 
 [![[Build Status]](https://github.com/silhouetteUA/k8s-controller/actions/workflows/ci.yaml/badge.svg)](...)
-[![Trivy Scan](https://github.com/silhouetteUA/k8s-controller/actions/workflows/trivy.yaml/badge.svg)](...)
-[![Go Version](https://img.shields.io/badge/go-1.24.4-blue)](...)
-[![License](https://img.shields.io/github/license/silhouetteUA/k8s-controller)](...)
+[![Trivy Scan](https://github.com/silhouetteUA/k8s-controller/actions/workflows/ci.yaml/badge.svg)](...)
+[![Go Version](https://img.shields.io/badge/go-1.24.4-blue)](https://golang.org/)
+[![License](https://img.shields.io/github/license/silhouetteUA/k8s-controller)](https://github.com/silhouetteUA/k8s-controller/blob/feature/step5-ci/LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fsilhouetteua%2Fk8s--controller-blue)](...)
 
 
