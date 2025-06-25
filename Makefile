@@ -2,7 +2,7 @@ APP = k8s-controller
 VERSION ?= $(shell git describe --tags --abbrev=0)
 COMMIT  ?= $(shell git rev-parse --short HEAD)
 DATE    ?= $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
-GHCR_REGISTRY := ghcr.io/silhouetteua
+GHCR_REGISTRY := ghcr.io/silhouetteUA
 
 LD_FLAGS = -X=github.com/silhouetteUA/$(APP)/cmd.Version=$(VERSION) \
            -X=github.com/silhouetteUA/$(APP)/cmd.Commit=$(COMMIT) \
