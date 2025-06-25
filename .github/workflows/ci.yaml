@@ -131,7 +131,7 @@ jobs:
       - name: Fail on CRITICAL vulnerabilities with Trivy
         uses: aquasecurity/trivy-action@0.31.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ github.repository }}:${{ env.VERSION }}-${{ env.COMMIT }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ env.VERSION }}-${{ env.COMMIT }}
           format: table
           severity: CRITICAL
           ignore-unfixed: true
