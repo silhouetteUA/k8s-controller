@@ -149,7 +149,7 @@ jobs:
         run: docker push ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ env.VERSION }}-${{ env.COMMIT }}
 
   helm:
-    name: 🛳️ Update and Upload Helm Chart values
+    name: 🛳️ Update and Upload Helm Chart
     runs-on: ubuntu-latest
     needs: docker
 
