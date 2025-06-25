@@ -154,6 +154,8 @@ jobs:
     name: 🛳️ Update and Upload Helm Chart
     runs-on: ubuntu-latest
     needs: docker
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout source
