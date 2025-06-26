@@ -44,7 +44,7 @@ func StartDeploymentInformer(ctx context.Context, clientset *kubernetes.Clientse
 }
 
 func addResourceHandlers(informer cache.SharedIndexInformer, resourceType string) {
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			log.Info().Msgf("%s added: %s", resourceType, getObjectName(obj))
 		},
@@ -55,6 +55,9 @@ func addResourceHandlers(informer cache.SharedIndexInformer, resourceType string
 			log.Info().Msgf("%s deleted: %s", resourceType, getObjectName(obj))
 		},
 	})
+	if err != nil {
+		return
+	}
 }
 
 func getObjectName(obj interface{}) string {

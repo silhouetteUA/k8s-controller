@@ -87,5 +87,5 @@ func init() {
 	serverCmd.Flags().IntVar(&serverPort, "port", 8080, "Port to run the server on")
 	serverCmd.Flags().StringVar(&serverKubeconfig, "kubeconfig", "", "Path to the kubeconfig file")
 	serverCmd.Flags().BoolVar(&serverInCluster, "in-cluster", false, "Use in-cluster Kubernetes config")
-	serverCmd.Flags().StringVar(&namespace, "namespace", "default", "Define the namespace, otherwise the default namespace is used")
+	serverCmd.Flags().StringVar(&namespace, "watch-ns", "default", "Define the namespace to be watched by the informer, otherwise the default namespace is used")
 }
