@@ -2,6 +2,8 @@ package informer
 
 import (
 	"context"
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	"os"
 	"time"
 
@@ -13,7 +15,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-func StartDeploymentInformer(ctx context.Context, clientset *kubernetes.Clientset, namespace string) {
+var deploymentsInformer cache.SharedIndexInformer
+var secretsInformer cache.SharedIndexInformer
+
+func StartInformerFactory(ctx context.Context, clientset *kubernetes.Clientset, namespace string) {
 	factory := informers.NewSharedInformerFactoryWithOptions(
 		clientset,
 		30*time.Second,
@@ -23,8 +28,8 @@ func StartDeploymentInformer(ctx context.Context, clientset *kubernetes.Clientse
 		}),
 	)
 
-	deploymentsInformer := factory.Apps().V1().Deployments().Informer()
-	secretsInformer := factory.Core().V1().Secrets().Informer()
+	deploymentsInformer = factory.Apps().V1().Deployments().Informer()
+	secretsInformer = factory.Core().V1().Secrets().Informer()
 
 	addResourceHandlers(deploymentsInformer, "Deployment")
 	addResourceHandlers(secretsInformer, "Secret")
@@ -65,4 +70,30 @@ func getObjectName(obj interface{}) string {
 		return o.GetName()
 	}
 	return "unknown"
+}
+
+func GetDeploymentNames() []string {
+	var names []string
+	if deploymentsInformer == nil {
+		return names
+	}
+	for _, obj := range deploymentsInformer.GetStore().List() {
+		if d, ok := obj.(*appsv1.Deployment); ok {
+			names = append(names, d.Name)
+		}
+	}
+	return names
+}
+
+func GetSecretNames() []string {
+	var names []string
+	if secretsInformer == nil {
+		return names
+	}
+	for _, obj := range secretsInformer.GetStore().List() {
+		if s, ok := obj.(*v1.Secret); ok {
+			names = append(names, s.Name)
+		}
+	}
+	return names
 }

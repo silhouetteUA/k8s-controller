@@ -15,19 +15,21 @@ var rootCmd = &cobalias.Command{
 	Use:   "kctl",
 	Short: "kctl is a custom Kubernetes controller CLI",
 	Long:  `"kctl" is a tool to test and run components of your custom Kubernetes controller`,
-	Run: func(cmd *cobalias.Command, args []string) {
+	PersistentPreRun: func(cmd *cobalias.Command, args []string) {
 		level := parseLogLevel(logLevel)
 		configureLogger(level)
+	},
+	Run: func(cmd *cobalias.Command, args []string) {
 		if len(args) == 0 {
 			_ = cmd.Help()
 			return
 		}
-		//log.Info().Msg("This is an info log")
-		//log.Debug().Msg("This is a debug log")
-		//log.Trace().Msg("This is a trace log")
-		//log.Warn().Msg("This is a warn log")
-		//log.Error().Msg("This is an error log")
-		//fmt.Println("")
+		log.Info().Msg("This is an info log")
+		log.Debug().Msg("This is a debug log")
+		log.Trace().Msg("This is a trace log")
+		log.Warn().Msg("This is a warn log")
+		log.Error().Msg("This is an error log")
+		fmt.Println("")
 	},
 }
 
