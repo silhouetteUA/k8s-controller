@@ -28,7 +28,7 @@ var serverCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		ctx := context.Background()
-		go informer.StartDeploymentInformer(ctx, clientset, namespace)
+		go informer.StartInformerFactory(ctx, clientset, namespace)
 		handler := func(ctx *fasthttp.RequestCtx) {
 			uuid := uuid.New().String()
 			switch string(ctx.Path()) {
@@ -45,6 +45,40 @@ var serverCmd = &cobra.Command{
 				if err != nil {
 					return
 				}
+			case "/deployments":
+				log.Info().Msg("Deployments request received")
+				ctx.Response.Header.Set("Content-Type", "application/json")
+				deployments := informer.GetDeploymentNames()
+				log.Info().Msgf("Deployments: %v", deployments)
+				ctx.SetStatusCode(200)
+				ctx.Write([]byte("["))
+				for i, name := range deployments {
+					ctx.WriteString("\"")
+					ctx.WriteString(name)
+					ctx.WriteString("\"")
+					if i < len(deployments)-1 {
+						ctx.WriteString(",")
+					}
+				}
+				ctx.Write([]byte("]"))
+				return
+			case "/secrets":
+				log.Info().Msg("Secrets request received")
+				ctx.Response.Header.Set("Content-Type", "application/json")
+				secrets := informer.GetSecretNames()
+				log.Info().Msgf("Secrets: %v", secrets)
+				ctx.SetStatusCode(200)
+				ctx.Write([]byte("["))
+				for i, name := range secrets {
+					ctx.WriteString("\"")
+					ctx.WriteString(name)
+					ctx.WriteString("\"")
+					if i < len(secrets)-1 {
+						ctx.WriteString(",")
+					}
+				}
+				ctx.Write([]byte("]"))
+				return
 			default:
 				log.Info().
 					Str("request_id", uuid).
