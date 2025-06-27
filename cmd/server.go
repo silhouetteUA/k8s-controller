@@ -60,7 +60,7 @@ var serverCmd = &cobra.Command{
 						ctx.WriteString(",") //nolint:errcheck
 					}
 				}
-				ctx.Write([]byte("]"))
+				ctx.Write([]byte("]")) //nolint:errcheck
 				return
 			case "/secrets":
 				log.Info().Msg("Secrets request received")
