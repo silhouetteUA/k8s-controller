@@ -51,13 +51,13 @@ var serverCmd = &cobra.Command{
 				deployments := informer.GetDeploymentNames()
 				log.Info().Msgf("Deployments: %v", deployments)
 				ctx.SetStatusCode(200)
-				ctx.Write([]byte("["))
+				ctx.Write([]byte("[")) //nolint:errcheck
 				for i, name := range deployments {
-					ctx.WriteString("\"")
-					ctx.WriteString(name)
-					ctx.WriteString("\"")
+					ctx.WriteString("\"") //nolint:errcheck
+					ctx.WriteString(name) //nolint:errcheck
+					ctx.WriteString("\"") //nolint:errcheck
 					if i < len(deployments)-1 {
-						ctx.WriteString(",")
+						ctx.WriteString(",") //nolint:errcheck
 					}
 				}
 				ctx.Write([]byte("]"))
@@ -68,16 +68,16 @@ var serverCmd = &cobra.Command{
 				secrets := informer.GetSecretNames()
 				log.Info().Msgf("Secrets: %v", secrets)
 				ctx.SetStatusCode(200)
-				ctx.Write([]byte("["))
+				ctx.Write([]byte("[")) //nolint:errcheck
 				for i, name := range secrets {
-					ctx.WriteString("\"")
-					ctx.WriteString(name)
-					ctx.WriteString("\"")
+					ctx.WriteString("\"") //nolint:errcheck
+					ctx.WriteString(name) //nolint:errcheck
+					ctx.WriteString("\"") //nolint:errcheck
 					if i < len(secrets)-1 {
-						ctx.WriteString(",")
+						ctx.WriteString(",") //nolint:errcheck
 					}
 				}
-				ctx.Write([]byte("]"))
+				ctx.Write([]byte("]")) //nolint:errcheck
 				return
 			default:
 				log.Info().
