@@ -30,8 +30,8 @@ ENVTEST_VERSION ?= release-0.19
 
 envtest:
 	go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
-	@eval "$$(setup-envtest use 1.30.0 -p path)" && \
-	echo "KUBEBUILDER_ASSETS set to $$KUBEBUILDER_ASSETS"
+	@setup-envtest use 1.30.0 -p path
+	@export KUBEBUILDER_ASSETS="$$(setup-envtest use 1.30.0 -p path)"
 
 
 format:
@@ -40,8 +40,9 @@ format:
 build:
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(BUILD_FLAGS) main.go
 
-test: envtest
-    KUBEBUILDER_ASSETS=$$(setup-envtest use 1.30.0 -p path) go test ./...
+test:
+	@echo "Running tests with envtest..."
+	@KUBEBUILDER_ASSETS="$$(setup-envtest use 1.30.0 -p path)" go test ./...
 
 run:
 	go run main.go
