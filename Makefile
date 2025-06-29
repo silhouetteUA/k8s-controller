@@ -28,9 +28,11 @@ ENVTEST ?= $(LOCALBIN)/setup-envtest
 ## Tool Versions
 ENVTEST_VERSION ?= release-0.19
 
-envtest: $(ENVTEST) ## Download setup-envtest locally if necessary.
-$(ENVTEST): $(LOCALBIN)
-	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest,$(ENVTEST_VERSION))
+envtest:
+	go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+	@eval "$$(setup-envtest use 1.30.0 -p path)" && \
+	echo "KUBEBUILDER_ASSETS set to $$KUBEBUILDER_ASSETS"
+
 
 format:
 	gofmt -s -w ./
@@ -39,8 +41,7 @@ build:
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(BUILD_FLAGS) main.go
 
 test: envtest
-	go install gotest.tools/gotestsum@latest
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use --bin-dir $(LOCALBIN) -p path)" gotestsum --junitfile report.xml --format testname ./... ${TEST_ARGS}
+    KUBEBUILDER_ASSETS=$$(setup-envtest use 1.30.0 -p path) go test ./...
 
 run:
 	go run main.go
