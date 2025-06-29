@@ -34,13 +34,16 @@ func TestStartDeploymentInformer(t *testing.T) {
 		informers.WithNamespace("default"),
 	)
 	informer := factory.Apps().V1().Deployments().Informer()
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			if d, ok := obj.(metav1.Object); ok {
 				added <- d.GetName()
 			}
 		},
 	})
+	if err != nil {
+		return
+	}
 
 	go func() {
 		defer wg.Done()
