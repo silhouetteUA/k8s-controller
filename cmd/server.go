@@ -16,11 +16,14 @@ import (
 	ctrlruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 )
 
 var serverPort int
 var serverKubeconfig string
 var serverInCluster bool
+var enableLeaderElection bool
+var metricsPort int
 
 var serverCmd = &cobra.Command{
 	Use:   "server",
@@ -36,7 +39,13 @@ var serverCmd = &cobra.Command{
 		ctx := context.Background()
 		go informer.StartInformerFactory(ctx, clientset, namespace)
 		// Start controller-runtime manager and controller
-		mgr, err := ctrlruntime.NewManager(ctrlruntime.GetConfigOrDie(), manager.Options{Cache: cache.Options{DefaultNamespaces: map[string]cache.Config{namespace: {}}}})
+		mgr, err := ctrlruntime.NewManager(ctrlruntime.GetConfigOrDie(), manager.Options{
+			LeaderElection:          enableLeaderElection,
+			LeaderElectionID:        "k8s-controller-leader-election",
+			LeaderElectionNamespace: namespace,
+			Metrics:                 server.Options{BindAddress: fmt.Sprintf(":%d", metricsPort)},
+			Cache:                   cache.Options{DefaultNamespaces: map[string]cache.Config{namespace: {}}},
+		})
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to create controller-runtime manager")
 			os.Exit(1)
@@ -149,4 +158,6 @@ func init() {
 	serverCmd.Flags().StringVar(&serverKubeconfig, "kubeconfig", "", "Path to the kubeconfig file")
 	serverCmd.Flags().BoolVar(&serverInCluster, "in-cluster", false, "Use in-cluster Kubernetes config")
 	serverCmd.Flags().StringVar(&namespace, "watch-ns", "default", "Define the namespace to be watched by the informer, otherwise the default namespace is used")
+	serverCmd.Flags().BoolVar(&enableLeaderElection, "enable-leader-election", true, "Enable leader election for controller manager")
+	serverCmd.Flags().IntVar(&metricsPort, "metrics-port", 8081, "Port for controller manager metrics")
 }
