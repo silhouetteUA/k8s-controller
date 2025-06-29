@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"github.com/silhouetteUA/k8s-controller/pkg/controller"
 	"github.com/silhouetteUA/k8s-controller/pkg/informer"
 	"github.com/spf13/cobra"
 	"github.com/valyala/fasthttp"
@@ -12,16 +13,24 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
+	ctrlruntime "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 )
 
 var serverPort int
 var serverKubeconfig string
 var serverInCluster bool
+var enableLeaderElection bool
+var metricsPort int
 
 var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Start a FastHTTP server",
 	Run: func(cmd *cobra.Command, args []string) {
+		level := parseLogLevel(logLevel)
+		configureLogger(level)
 		clientset, err := getServerKubeClient(serverKubeconfig, serverInCluster)
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to create Kubernetes client")
@@ -29,6 +38,33 @@ var serverCmd = &cobra.Command{
 		}
 		ctx := context.Background()
 		go informer.StartInformerFactory(ctx, clientset, namespace)
+		// Start controller-runtime manager and controller
+		mgr, err := ctrlruntime.NewManager(ctrlruntime.GetConfigOrDie(), manager.Options{
+			LeaderElection:          enableLeaderElection,
+			LeaderElectionID:        "k8s-controller-leader-election",
+			LeaderElectionNamespace: namespace,
+			Metrics:                 server.Options{BindAddress: fmt.Sprintf(":%d", metricsPort)},
+			Cache:                   cache.Options{DefaultNamespaces: map[string]cache.Config{namespace: {}}},
+		})
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to create controller-runtime manager")
+			os.Exit(1)
+		}
+		if err := controller.AddDeploymentController(mgr); err != nil {
+			log.Error().Err(err).Msg("Failed to add deployment controller")
+			os.Exit(1)
+		}
+		if err := controller.AddSecretController(mgr); err != nil {
+			log.Error().Err(err).Msg("Failed to add secret controller")
+			os.Exit(1)
+		}
+		go func() {
+			log.Info().Msg("Starting controller-runtime manager ... --watch-namespace=" + namespace)
+			if err := mgr.Start(cmd.Context()); err != nil {
+				log.Error().Err(err).Msg("Manager exited with error")
+				os.Exit(1)
+			}
+		}()
 		handler := func(ctx *fasthttp.RequestCtx) {
 			uuid := uuid.New().String()
 			switch string(ctx.Path()) {
@@ -122,4 +158,6 @@ func init() {
 	serverCmd.Flags().StringVar(&serverKubeconfig, "kubeconfig", "", "Path to the kubeconfig file")
 	serverCmd.Flags().BoolVar(&serverInCluster, "in-cluster", false, "Use in-cluster Kubernetes config")
 	serverCmd.Flags().StringVar(&namespace, "watch-ns", "default", "Define the namespace to be watched by the informer, otherwise the default namespace is used")
+	serverCmd.Flags().BoolVar(&enableLeaderElection, "enable-leader-election", true, "Enable leader election for controller manager")
+	serverCmd.Flags().IntVar(&metricsPort, "metrics-port", 8081, "Port for controller manager metrics")
 }
