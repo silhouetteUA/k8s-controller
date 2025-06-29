@@ -5,7 +5,6 @@ DATE    ?= $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GHCR_REGISTRY := ghcr.io/silhouetteua
 ENVTEST_VERSION := 1.30.0
 SETUP_ENVTEST := $(shell go env GOPATH)/bin/setup-envtest
-KUBEBUILDER_ASSETS := $(shell $(SETUP_ENVTEST) use $(ENVTEST_VERSION) -p path)
 
 LD_FLAGS = -X=github.com/silhouetteUA/$(APP)/cmd.Version=$(VERSION) \
            -X=github.com/silhouetteUA/$(APP)/cmd.Commit=$(COMMIT) \
@@ -24,9 +23,10 @@ envtest:
 	@$(SETUP_ENVTEST) use $(ENVTEST_VERSION) -p path
 
 test: envtest
-	@echo "Running tests with envtest..."
-	@echo "KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS)"
-	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./...
+	@echo "Retrieving KUBEBUILDER_ASSETS path..."
+	@export KUBEBUILDER_ASSETS="$$( $(SETUP_ENVTEST) use $(ENVTEST_VERSION) -p path )"; \
+	echo "KUBEBUILDER_ASSETS=$$KUBEBUILDER_ASSETS"; \
+	KUBEBUILDER_ASSETS=$$KUBEBUILDER_ASSETS go test ./...
 
 format:
 	gofmt -s -w ./
