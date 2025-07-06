@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	frontendv1alpha1 "github.com/silhouetteUA/k8s-controller/pkg/api/frontend/v1alpha1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/stretchr/testify/require"
@@ -28,12 +29,15 @@ func StartTestManager(t *testing.T) (mgr manager.Manager, k8sClient client.Clien
 
 	// Add the core Kubernetes schemes
 	require.NoError(t, scheme.AddToScheme(testScheme))
+	require.NoError(t, frontendv1alpha1.AddToScheme(testScheme))
+	metav1.AddToGroupVersion(testScheme, frontendv1alpha1.SchemeGroupVersion)
 	require.NoError(t, apiextensionsv1.AddToScheme(testScheme))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	env := &envtest.Environment{
+		CRDDirectoryPaths:        []string{"../../config/crd/"},
 		ErrorIfCRDPathMissing:    true,
 		AttachControlPlaneOutput: false,
 	}
@@ -81,6 +85,10 @@ func SetupEnv(t *testing.T) (*envtest.Environment, *kubernetes.Clientset, func()
 	// Add the core Kubernetes schemes
 	err := scheme.AddToScheme(testScheme)
 	require.NoError(t, err)
+	err = frontendv1alpha1.AddToScheme(testScheme)
+	require.NoError(t, err)
+
+	metav1.AddToGroupVersion(testScheme, frontendv1alpha1.SchemeGroupVersion)
 
 	// Create a longer context timeout for environment startup
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -91,6 +99,9 @@ func SetupEnv(t *testing.T) (*envtest.Environment, *kubernetes.Clientset, func()
 	require.NoError(t, err)
 
 	env := &envtest.Environment{
+		CRDDirectoryPaths: []string{
+			"../../config/crd/",
+		},
 		ErrorIfCRDPathMissing:    true,
 		AttachControlPlaneOutput: false,
 	}
