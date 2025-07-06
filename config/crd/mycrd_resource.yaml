@@ -1,0 +1,9 @@
+apiVersion: frontendpage.silhouetteua.io/v1alpha1
+kind: FrontendPage
+metadata:
+  name: testpage
+  namespace: argocd
+spec:
+  image: nginx:latest
+  contents: test data for configmap
+  replicas: 1
