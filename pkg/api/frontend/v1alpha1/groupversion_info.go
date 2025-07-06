@@ -1,3 +1,6 @@
+// +kubebuilder:object:generate=true
+// +groupName=frontendpage.silhouetteua.io
+
 package v1alpha1
 
 import (
