@@ -23,9 +23,18 @@ func printTableState(ctx context.Context, c client.Client, ns string, t *testing
 	var cms corev1.ConfigMapList
 	var deps appsv1.DeploymentList
 
-	c.List(ctx, &pages, client.InNamespace(ns))
-	c.List(ctx, &cms, client.InNamespace(ns))
-	c.List(ctx, &deps, client.InNamespace(ns))
+	err := c.List(ctx, &pages, client.InNamespace(ns))
+	if err != nil {
+		return
+	}
+	err = c.List(ctx, &cms, client.InNamespace(ns))
+	if err != nil {
+		return
+	}
+	err = c.List(ctx, &deps, client.InNamespace(ns))
+	if err != nil {
+		return
+	}
 
 	t.Logf("\n==== ETCD STATE (%s) ====", step)
 	t.Logf("%-15s %-15s %-10s %-10s", "KIND", "NAME", "NAMESPACE", "EXTRA")
