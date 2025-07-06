@@ -3,18 +3,24 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/go-logr/zerologr"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	frontendv1alpha1 "github.com/silhouetteUA/k8s-controller/pkg/api/frontend/v1alpha1"
 	"github.com/silhouetteUA/k8s-controller/pkg/controller"
 	"github.com/silhouetteUA/k8s-controller/pkg/informer"
 	"github.com/spf13/cobra"
 	"github.com/valyala/fasthttp"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
 	ctrlruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 )
@@ -38,8 +44,20 @@ var serverCmd = &cobra.Command{
 		}
 		ctx := context.Background()
 		go informer.StartInformerFactory(ctx, clientset, namespace)
+		logf.SetLogger(zap.New(zap.UseDevMode(true)))
+		logf.SetLogger(zerologr.New(&log.Logger))
 		// Start controller-runtime manager and controller
+		scheme := runtime.NewScheme()
+		if err := clientgoscheme.AddToScheme(scheme); err != nil {
+			log.Error().Err(err).Msg("Failed to add client-go scheme")
+			os.Exit(1)
+		}
+		if err := frontendv1alpha1.AddToScheme(scheme); err != nil {
+			log.Error().Err(err).Msg("Failed to add FrontendPage scheme")
+			os.Exit(1)
+		}
 		mgr, err := ctrlruntime.NewManager(ctrlruntime.GetConfigOrDie(), manager.Options{
+			Scheme:                  scheme, // ADD YOUR OWN SCHEME, NOT A DEFAULT ONE !!!!!!
 			LeaderElection:          enableLeaderElection,
 			LeaderElectionID:        "k8s-controller-leader-election",
 			LeaderElectionNamespace: namespace,
@@ -56,6 +74,10 @@ var serverCmd = &cobra.Command{
 		}
 		if err := controller.AddSecretController(mgr); err != nil {
 			log.Error().Err(err).Msg("Failed to add secret controller")
+			os.Exit(1)
+		}
+		if err := controller.AddFrontendController(mgr); err != nil {
+			log.Error().Err(err).Msg("Failed to add frontend controller")
 			os.Exit(1)
 		}
 		go func() {
