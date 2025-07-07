@@ -1,0 +1,8 @@
+apiVersion: frontendpage.silhouetteua.io/v1alpha1
+kind: FrontendPageBackup
+metadata:
+  name: testpage-backup
+  namespace: argocd
+spec:
+  frontendPageRef: testpage
+  schedule: "*/5 * * * *"

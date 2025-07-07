@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/zerologr"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	frontendv1alpha2 "github.com/silhouetteUA/k8s-controller/pkg/api/frontend/frontendBackup"
 	frontendv1alpha1 "github.com/silhouetteUA/k8s-controller/pkg/api/frontend/v1alpha1"
 	"github.com/silhouetteUA/k8s-controller/pkg/controller"
 	"github.com/silhouetteUA/k8s-controller/pkg/informer"
@@ -56,6 +57,10 @@ var serverCmd = &cobra.Command{
 			log.Error().Err(err).Msg("Failed to add FrontendPage scheme")
 			os.Exit(1)
 		}
+		if err := frontendv1alpha2.AddToScheme(scheme); err != nil {
+			log.Error().Err(err).Msg("Failed to add FrontendPageBackup scheme")
+			os.Exit(1)
+		}
 		mgr, err := ctrlruntime.NewManager(ctrlruntime.GetConfigOrDie(), manager.Options{
 			Scheme:                  scheme, // ADD YOUR OWN SCHEME, NOT A DEFAULT ONE !!!!!!
 			LeaderElection:          enableLeaderElection,
@@ -77,6 +82,10 @@ var serverCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		if err := controller.AddFrontendController(mgr); err != nil {
+			log.Error().Err(err).Msg("Failed to add frontend controller")
+			os.Exit(1)
+		}
+		if err := controller.AddFrontendPageBackupController(mgr); err != nil {
 			log.Error().Err(err).Msg("Failed to add frontend controller")
 			os.Exit(1)
 		}
