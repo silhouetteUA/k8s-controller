@@ -50,7 +50,10 @@ func (api *FrontendPageAPI) ListFrontendPages(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	ctx.SetContentType("application/json")
-	json.NewEncoder(ctx).Encode(list.Items)
+	err = json.NewEncoder(ctx).Encode(list.Items)
+	if err != nil {
+		return
+	}
 }
 
 // GetFrontendPage godoc
@@ -78,7 +81,10 @@ func (api *FrontendPageAPI) GetFrontendPage(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	ctx.SetContentType("application/json")
-	json.NewEncoder(ctx).Encode(obj)
+	err = json.NewEncoder(ctx).Encode(obj)
+	if err != nil {
+		return
+	}
 }
 
 // CreateFrontendPage godoc
@@ -107,7 +113,10 @@ func (api *FrontendPageAPI) CreateFrontendPage(ctx *fasthttp.RequestCtx) {
 	}
 	ctx.SetStatusCode(fasthttp.StatusCreated)
 	ctx.SetContentType("application/json")
-	json.NewEncoder(ctx).Encode(obj)
+	err := json.NewEncoder(ctx).Encode(obj)
+	if err != nil {
+		return
+	}
 }
 
 // UpdateFrontendPage godoc
