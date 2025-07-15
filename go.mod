@@ -3,6 +3,7 @@ module github.com/silhouetteUA/k8s-controller
 go 1.24.4
 
 require (
+	github.com/buaazp/fasthttprouter v0.1.1
 	github.com/go-logr/zerologr v1.2.3
 	github.com/google/uuid v1.6.0
 	github.com/rs/zerolog v1.34.0

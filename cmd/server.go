@@ -3,9 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/buaazp/fasthttprouter"
 	"github.com/go-logr/zerologr"
-	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"github.com/silhouetteUA/k8s-controller/pkg/api"
 	frontendv1alpha2 "github.com/silhouetteUA/k8s-controller/pkg/api/frontend/frontendBackup"
 	frontendv1alpha1 "github.com/silhouetteUA/k8s-controller/pkg/api/frontend/v1alpha1"
 	"github.com/silhouetteUA/k8s-controller/pkg/controller"
@@ -96,73 +97,85 @@ var serverCmd = &cobra.Command{
 				os.Exit(1)
 			}
 		}()
-		handler := func(ctx *fasthttp.RequestCtx) {
-			uuid := uuid.New().String()
-			switch string(ctx.Path()) {
-			case "/version":
-				log.Info().
-					Str("request_id", uuid).
-					Str("method", string(ctx.Method())).
-					Str("path", string(ctx.Path())).
-					Str("remote_addr", ctx.RemoteAddr().String()).
-					Msg("Check version request")
-				ctx.Response.Header.SetContentType("application/json")
-				ctx.Response.Header.Set("X-Request-ID", uuid)
-				_, err := fmt.Fprintf(ctx, `{"version": "%s", "commit": "%s", "date": "%s", "requestID": "%s"}`, Version, Commit, BuildDate, uuid)
-				if err != nil {
-					return
-				}
-			case "/deployments":
-				log.Info().Msg("Deployments request received")
-				ctx.Response.Header.Set("Content-Type", "application/json")
-				deployments := informer.GetDeploymentNames()
-				log.Info().Msgf("Deployments: %v", deployments)
-				ctx.SetStatusCode(200)
-				ctx.Write([]byte("[")) //nolint:errcheck
-				for i, name := range deployments {
-					ctx.WriteString("\"") //nolint:errcheck
-					ctx.WriteString(name) //nolint:errcheck
-					ctx.WriteString("\"") //nolint:errcheck
-					if i < len(deployments)-1 {
-						ctx.WriteString(",") //nolint:errcheck
-					}
-				}
-				ctx.Write([]byte("]")) //nolint:errcheck
-				return
-			case "/secrets":
-				log.Info().Msg("Secrets request received")
-				ctx.Response.Header.Set("Content-Type", "application/json")
-				secrets := informer.GetSecretNames()
-				log.Info().Msgf("Secrets: %v", secrets)
-				ctx.SetStatusCode(200)
-				ctx.Write([]byte("[")) //nolint:errcheck
-				for i, name := range secrets {
-					ctx.WriteString("\"") //nolint:errcheck
-					ctx.WriteString(name) //nolint:errcheck
-					ctx.WriteString("\"") //nolint:errcheck
-					if i < len(secrets)-1 {
-						ctx.WriteString(",") //nolint:errcheck
-					}
-				}
-				ctx.Write([]byte("]")) //nolint:errcheck
-				return
-			default:
-				log.Info().
-					Str("request_id", uuid).
-					Str("method", string(ctx.Method())).
-					Str("path", string(ctx.Path())).
-					Str("remote_addr", ctx.RemoteAddr().String()).
-					Msg("Incoming request")
-				ctx.Response.Header.Set("X-Request-ID", uuid)
-				_, err := fmt.Fprintf(ctx, `{"message:" "FastHTTP welcomes you, traveller!", "requestID": "%s"}`, uuid)
-				if err != nil {
-					return
-				}
-			}
+		router := fasthttprouter.New()
+		frontendAPI := &api.FrontendPageAPI{
+			K8sClient: mgr.GetClient(),
+			Namespace: namespace,
 		}
+		router.GET("/api/frontendpages", frontendAPI.ListFrontendPages)
+		//curl -X POST -H "Content-Type: application/json" --data-binary "@config/crd/frontendPage_post.json" http://localhost:8080/api/frontendpages
+		router.POST("/api/frontendpages", frontendAPI.CreateFrontendPage)
+		router.GET("/api/frontendpages/:name", frontendAPI.GetFrontendPage)
+		router.PUT("/api/frontendpages/:name", frontendAPI.UpdateFrontendPage)
+		router.DELETE("/api/frontendpages/:name", frontendAPI.DeleteFrontendPage)
+		//OLD way, can just parse the methods
+		//handler := func(ctx *fasthttp.RequestCtx) {
+		//	uuid := uuid.New().String()
+		//	switch string(ctx.Path()) {
+		//	case "/version":
+		//		log.Info().
+		//			Str("request_id", uuid).
+		//			Str("method", string(ctx.Method())).
+		//			Str("path", string(ctx.Path())).
+		//			Str("remote_addr", ctx.RemoteAddr().String()).
+		//			Msg("Check version request")
+		//		ctx.Response.Header.SetContentType("application/json")
+		//		ctx.Response.Header.Set("X-Request-ID", uuid)
+		//		_, err := fmt.Fprintf(ctx, `{"version": "%s", "commit": "%s", "date": "%s", "requestID": "%s"}`, Version, Commit, BuildDate, uuid)
+		//		if err != nil {
+		//			return
+		//		}
+		//	case "/deployments":
+		//		log.Info().Msg("Deployments request received")
+		//		ctx.Response.Header.Set("Content-Type", "application/json")
+		//		deployments := informer.GetDeploymentNames()
+		//		log.Info().Msgf("Deployments: %v", deployments)
+		//		ctx.SetStatusCode(200)
+		//		ctx.Write([]byte("[")) //nolint:errcheck
+		//		for i, name := range deployments {
+		//			ctx.WriteString("\"") //nolint:errcheck
+		//			ctx.WriteString(name) //nolint:errcheck
+		//			ctx.WriteString("\"") //nolint:errcheck
+		//			if i < len(deployments)-1 {
+		//				ctx.WriteString(",") //nolint:errcheck
+		//			}
+		//		}
+		//		ctx.Write([]byte("]")) //nolint:errcheck
+		//		return
+		//	case "/secrets":
+		//		log.Info().Msg("Secrets request received")
+		//		ctx.Response.Header.Set("Content-Type", "application/json")
+		//		secrets := informer.GetSecretNames()
+		//		log.Info().Msgf("Secrets: %v", secrets)
+		//		ctx.SetStatusCode(200)
+		//		ctx.Write([]byte("[")) //nolint:errcheck
+		//		for i, name := range secrets {
+		//			ctx.WriteString("\"") //nolint:errcheck
+		//			ctx.WriteString(name) //nolint:errcheck
+		//			ctx.WriteString("\"") //nolint:errcheck
+		//			if i < len(secrets)-1 {
+		//				ctx.WriteString(",") //nolint:errcheck
+		//			}
+		//		}
+		//		ctx.Write([]byte("]")) //nolint:errcheck
+		//		return
+		//	default:
+		//		log.Info().
+		//			Str("request_id", uuid).
+		//			Str("method", string(ctx.Method())).
+		//			Str("path", string(ctx.Path())).
+		//			Str("remote_addr", ctx.RemoteAddr().String()).
+		//			Msg("Incoming request")
+		//		ctx.Response.Header.Set("X-Request-ID", uuid)
+		//		_, err := fmt.Fprintf(ctx, `{"message:" "FastHTTP welcomes you, traveller!", "requestID": "%s"}`, uuid)
+		//		if err != nil {
+		//			return
+		//		}
+		//	}
+		//}
 		addr := fmt.Sprintf(":%d", serverPort)
 		log.Info().Msgf("Starting FastHTTP server on %s port", addr)
-		if err := fasthttp.ListenAndServe(addr, handler); err != nil {
+		if err := fasthttp.ListenAndServe(addr, router.Handler); err != nil { // here  you can switch between the handlers old=handler and new=router.Handler
 			log.Error().Err(err).Msg("Error starting FastHTTP server")
 			os.Exit(1)
 		}

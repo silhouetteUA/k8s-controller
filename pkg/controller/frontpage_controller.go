@@ -111,7 +111,7 @@ func (r *FrontendPageReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			return ctrl.Result{}, err
 		}
 
-		if err := r.Create(ctx, cm); err != nil {
+		if err := r.Create(ctx, cm); err != nil && !errors.IsAlreadyExists(err) {
 			return ctrl.Result{}, err
 		}
 	} else if !reflect.DeepEqual(existingCM.Data, cm.Data) {
@@ -122,6 +122,7 @@ func (r *FrontendPageReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	// 2. Ensure Deployment exists and is up to date
+	log.Info().Msgf("Reconciling Deployment: %s/%s", req.Namespace, req.Name)
 	dep := buildDeployment(&page)
 	if err := ctrl.SetControllerReference(&page, dep, r.Scheme); err != nil {
 		return ctrl.Result{}, err
@@ -130,7 +131,7 @@ func (r *FrontendPageReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	log.Info().Msgf("Reconciling Deployment for FrontendPage: %s %s", dep.Name, dep.Namespace)
 	var existingDep appsv1.Deployment
 
-	if err := r.Get(ctx, req.NamespacedName, &existingDep); err != nil {
+	if err := r.Get(ctx, req.NamespacedName, &existingDep); err != nil && !errors.IsAlreadyExists(err) {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
 		}
