@@ -3,9 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/buaazp/fasthttprouter"
 	"github.com/go-logr/zerologr"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"github.com/silhouetteUA/k8s-controller/pkg/api"
 	frontendv1alpha2 "github.com/silhouetteUA/k8s-controller/pkg/api/frontend/frontendBackup"
 	frontendv1alpha1 "github.com/silhouetteUA/k8s-controller/pkg/api/frontend/v1alpha1"
 	"github.com/silhouetteUA/k8s-controller/pkg/controller"
@@ -96,6 +98,17 @@ var serverCmd = &cobra.Command{
 				os.Exit(1)
 			}
 		}()
+		router := fasthttprouter.New()
+		frontendAPI := &api.FrontendPageAPI{
+			K8sClient: mgr.GetClient(),
+			Namespace: namespace,
+		}
+		router.GET("/api/frontendpages", frontendAPI.ListFrontendPages)
+		router.POST("/api/frontendpages", frontendAPI.CreateFrontendPage)
+		router.GET("/api/frontendpages/:name", frontendAPI.GetFrontendPage)
+		router.PUT("/api/frontendpages/:name", frontendAPI.UpdateFrontendPage)
+		router.DELETE("/api/frontendpages/:name", frontendAPI.DeleteFrontendPage)
+		//OLD way, can just parse the methods
 		handler := func(ctx *fasthttp.RequestCtx) {
 			uuid := uuid.New().String()
 			switch string(ctx.Path()) {
@@ -162,7 +175,7 @@ var serverCmd = &cobra.Command{
 		}
 		addr := fmt.Sprintf(":%d", serverPort)
 		log.Info().Msgf("Starting FastHTTP server on %s port", addr)
-		if err := fasthttp.ListenAndServe(addr, handler); err != nil {
+		if err := fasthttp.ListenAndServe(addr, handler); err != nil { // here  you can switch between the handlers old=handler and new=router.Handler
 			log.Error().Err(err).Msg("Error starting FastHTTP server")
 			os.Exit(1)
 		}
