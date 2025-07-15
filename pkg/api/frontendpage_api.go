@@ -165,7 +165,10 @@ func (api *FrontendPageAPI) UpdateFrontendPage(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	ctx.SetContentType("application/json")
-	json.NewEncoder(ctx).Encode(existing)
+	err = json.NewEncoder(ctx).Encode(existing)
+	if err != nil {
+		return
+	}
 }
 
 // DeleteFrontendPage godoc
