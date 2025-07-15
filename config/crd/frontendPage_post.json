@@ -1,0 +1,13 @@
+{
+  "kind": "FrontendPage",
+  "apiVersion": "frontendpage.silhouetteua.io/v1alpha1",
+  "metadata": {
+    "name": "posttestpage",
+    "namespace": "argocd"
+  },
+  "spec": {
+    "contents": "post test data for configmap",
+    "image": "nginx:latest",
+    "replicas": 2
+  }
+}
