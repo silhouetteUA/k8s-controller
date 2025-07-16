@@ -70,7 +70,10 @@ func (api *FrontendPageAPI) ListFrontendPages(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	ctx.SetContentType("application/json")
-	json.NewEncoder(ctx).Encode(FrontendPageListDoc{Items: docs})
+	err = json.NewEncoder(ctx).Encode(FrontendPageListDoc{Items: docs})
+	if err != nil{
+		return
+	}
 }
 
 // GetFrontendPage godoc
