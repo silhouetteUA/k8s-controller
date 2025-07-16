@@ -3,8 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/buaazp/fasthttprouter"
 	"github.com/go-logr/zerologr"
+	mcpserver "github.com/mark3labs/mcp-go/server"
 	"github.com/rs/zerolog/log"
 	"github.com/silhouetteUA/k8s-controller/pkg/api"
 	frontendv1alpha2 "github.com/silhouetteUA/k8s-controller/pkg/api/frontend/frontendBackup"
@@ -18,7 +21,6 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"os"
 	ctrlruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -32,6 +34,9 @@ var serverKubeconfig string
 var serverInCluster bool
 var enableLeaderElection bool
 var metricsPort int
+var enableMCP bool
+var mcpPort int
+var FrontendAPI *api.FrontendPageAPI
 
 var serverCmd = &cobra.Command{
 	Use:   "server",
@@ -102,6 +107,7 @@ var serverCmd = &cobra.Command{
 			K8sClient: mgr.GetClient(),
 			Namespace: namespace,
 		}
+		api.FrontendAPI = frontendAPI
 		router.GET("/api/frontendpages", frontendAPI.ListFrontendPages)
 		//curl -X POST -H "Content-Type: application/json" --data-binary "@config/crd/frontendPage_post.json" http://localhost:8080/api/frontendpages
 		router.POST("/api/frontendpages", frontendAPI.CreateFrontendPage)
@@ -173,6 +179,20 @@ var serverCmd = &cobra.Command{
 		//		}
 		//	}
 		//}
+		if enableMCP {
+			go func() {
+				mcpServer := NewMCPServer("K8s Controller MCP", Version)
+				sseServer := mcpserver.NewSSEServer(mcpServer,
+					mcpserver.WithBaseURL(fmt.Sprintf("http://:%d", mcpPort)),
+				)
+				log.Info().Msgf("Starting MCP server in SSE mode on port %d", mcpPort)
+				if err := sseServer.Start(fmt.Sprintf(":%d", mcpPort)); err != nil {
+					log.Fatal().Err(err).Msg("MCP SSE server error")
+				}
+			}()
+			log.Info().Msgf("MCP server ready on port %d", mcpPort)
+		}
+
 		addr := fmt.Sprintf(":%d", serverPort)
 		log.Info().Msgf("Starting FastHTTP server on %s port", addr)
 		if err := fasthttp.ListenAndServe(addr, router.Handler); err != nil { // here  you can switch between the handlers old=handler and new=router.Handler
@@ -204,4 +224,6 @@ func init() {
 	serverCmd.Flags().StringVar(&namespace, "watch-ns", "default", "Define the namespace to be watched by the informer, otherwise the default namespace is used")
 	serverCmd.Flags().BoolVar(&enableLeaderElection, "enable-leader-election", true, "Enable leader election for controller manager")
 	serverCmd.Flags().IntVar(&metricsPort, "metrics-port", 8081, "Port for controller manager metrics")
+	serverCmd.Flags().BoolVar(&enableMCP, "enable-mcp", false, "Enable MCP server")
+	serverCmd.Flags().IntVar(&mcpPort, "mcp-port", 9090, "Port for MCP server")
 }

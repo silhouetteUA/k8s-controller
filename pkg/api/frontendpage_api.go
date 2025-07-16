@@ -18,6 +18,8 @@ type FrontendPageAPI struct {
 	Namespace string // default namespace for simplicity
 }
 
+var FrontendAPI *FrontendPageAPI
+
 // --- Swagger-only structs for documentation ---
 // FrontendPageDoc is a simplified version for Swagger docs
 // @Description FrontendPage resource (Swagger only)
@@ -34,6 +36,23 @@ type FrontendPageListDoc struct {
 	Items []FrontendPageDoc `json:"items"`
 }
 
+func (api *FrontendPageAPI) ListFrontendPagesRaw(ctx context.Context) ([]FrontendPageDoc, error) {
+	list := &frontendv1alpha1.FrontendPageList{}
+	if err := api.K8sClient.List(ctx, list, client.InNamespace(api.Namespace)); err != nil {
+		return nil, err
+	}
+	docs := make([]FrontendPageDoc, 0, len(list.Items))
+	for _, item := range list.Items {
+		docs = append(docs, FrontendPageDoc{
+			Name:     item.Name,
+			Contents: item.Spec.Contents,
+			Image:    item.Spec.Image,
+			Replicas: item.Spec.Replicas,
+		})
+	}
+	return docs, nil
+}
+
 // ListFrontendPages godoc
 // @Summary List all FrontendPages
 // @Description Get all FrontendPage resources
@@ -42,18 +61,16 @@ type FrontendPageListDoc struct {
 // @Success 200 {object} FrontendPageListDoc
 // @Router /api/frontendpages [get]
 func (api *FrontendPageAPI) ListFrontendPages(ctx *fasthttp.RequestCtx) {
-	list := &frontendv1alpha1.FrontendPageList{}
-	err := api.K8sClient.List(context.Background(), list, client.InNamespace(api.Namespace))
+	docs, err := api.ListFrontendPagesRaw(context.Background())
+	// list := &frontendv1alpha1.FrontendPageList{}
+	// err := api.K8sClient.List(context.Background(), list, client.InNamespace(api.Namespace))
 	if err != nil {
 		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
 		ctx.SetBodyString(fmt.Sprintf(`{"error":"%v"}`, err))
 		return
 	}
 	ctx.SetContentType("application/json")
-	err = json.NewEncoder(ctx).Encode(list.Items)
-	if err != nil {
-		return
-	}
+	json.NewEncoder(ctx).Encode(FrontendPageListDoc{Items: docs})
 }
 
 // GetFrontendPage godoc
